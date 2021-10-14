@@ -1,0 +1,15 @@
+{
+	"grafana_urls":[
+		{
+			"name": "AWS",
+			"url":"<grafna_url>",
+			"api_key":"api_key"
+		}
+	],
+	"backup":{
+		"local":{
+			"backup_folder": "backup/",
+			"enabled": true
+		}
+	}
+}
