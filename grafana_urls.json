@@ -1,15 +1,15 @@
 {
 	"grafana_urls":[
 		{
-			"name": "AWS",
-			"url":"http://a1a9d88d007d246dda7aeeafa9f6b8ca-1633467508.us-east-1.elb.amazonaws.com:3000",
-			"api_key":"eyJrIjoicU5TcXFRWDVvbDNrYWlTbk5zeVpCOWJaSXJORmZVRHgiLCJuIjoiZ3JhZmFuYS1iYWNrdXAiLCJpZCI6MX0="
+			"name": "$GRAFANA_HOST_NAME",
+			"url": "$GRAFANA_URL",
+			"api_key": "$GRAFANA_KEY"
 		}
 	],
 	"backup":{
 		"local":{
-			"backup_folder": "backup/",
-			"enabled": true
+			"backup_folder": "$BACKUP_FOLDER_NAME",
+			"enabled": "$LOCAL_BACKUP"
 		}
 	}
 }

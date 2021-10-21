@@ -26,6 +26,7 @@ class GrafanaBackupManager:
             if self.local:
                 self.backup_folder = local_backup_content.get('backup_folder', '')+self.name+'/daily/'
                 grafana_sdk.get_logger().info("Local backup is enabled and storing under : {}".format(self.backup_folder))
+                grafana_sdk.get_logger().info("Each Backup folder will have format like this : {}".format(current_date))
                 
 
     def dashboard_backup(self):
