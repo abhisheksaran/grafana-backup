@@ -2,8 +2,8 @@
 	"grafana_urls":[
 		{
 			"name": "AWS",
-			"url":"<grafna_url>",
-			"api_key":"api_key"
+			"url":"http://a1a9d88d007d246dda7aeeafa9f6b8ca-1633467508.us-east-1.elb.amazonaws.com:3000",
+			"api_key":"eyJrIjoicU5TcXFRWDVvbDNrYWlTbk5zeVpCOWJaSXJORmZVRHgiLCJuIjoiZ3JhZmFuYS1iYWNrdXAiLCJpZCI6MX0="
 		}
 	],
 	"backup":{

@@ -4,7 +4,7 @@ import sys
 import logging 
 
 def get_logger():
-    logging.basicConfig(stream=sys.stdout, level="INFO", format="[$(asctime)s %(levelname)s [%(threadName)s] [%(filename)s:%(funcName)s:%(lineno)s] %(message)s",datefmt='%Y-%m-%dT%H:%M:%S')
+    logging.basicConfig(stream=sys.stdout, level="INFO", format="[%(asctime)s %(levelname)s [%(threadName)s] [%(filename)s:%(funcName)s:%(lineno)s] %(message)s",datefmt='%Y-%m-%dT%H:%M:%S')
     logger = logging.getLogger("grafana_backup")
     return logger
 
@@ -22,7 +22,7 @@ class GrafanaApi:
         API to get all the grafana-dashboards
         """
         url = "{}/api/search?type=dash-db".format(self.grafana_url)
-        get_logger.info("Request To : URL {}".format(url))
+        get_logger().info("Request To : URL {}".format(url))
         response = requests.get(url, headers=self.__get_header())
         if response.status_code != 200:
             get_logger().info("API Call error, API: {}, status_code:{}, error: {}".format(url, response.status_code, response.text))
@@ -34,11 +34,11 @@ class GrafanaApi:
         API to get the details about particular dashboards given its unique UID
         """
         url = "{}/api/dashboards/uid/{}".format(self.grafana_url, dashboard_uid)
-        get_logger.info("Request To : URL {}".format(url))
-        response = requests.get(url, headers = self.__get_header())
+        get_logger().info("Request To : URL {}".format(url))
+        response = requests.get(url, headers=self.__get_header())
         if response.status_code != 200:
             get_logger().info("API Call error, API: {}, status_code:{}, error: {}".format(url, response.status_code, response.text))
-        print(response.json())
+        #print(response.json())
         return response.json()
 
     def search_folder(self, folder_id):
@@ -47,10 +47,10 @@ class GrafanaApi:
         """
         url = "{}/api/folders/id/{}".format(self.grafana_url, folder_id)
         get_logger().info("Request To : URL {}".format(url))
-        response = requests.get(url, header=self.__get_header())
+        response = requests.get(url, headers=self.__get_header())
         if response.status_code != 200:
             get_logger().info("API Call Error, API: {}, status_code: {}, error: {}".format(url, response.status_code, response.text))
-        return response.json()
+        return response
 
     def create_folder(self, folder_title):
         """
@@ -59,7 +59,7 @@ class GrafanaApi:
         url = "{}/api/folders".format(self.grafana_url)
         data = { "title": folder_title,}
         get_logger().info("Request To : URL {}".format(url))
-        response = requests.post(url, header=self.__get_header())
+        response = requests.post(url, data= data,  headers=self.__get_header())
         if response.status_code != 200:
             get_logger().info("API Call Error, API: {}, status_code: {}, error: {}".format(url, response.status_code, response.text))
         return response.json()
