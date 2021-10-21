@@ -8,8 +8,6 @@ from datetime import datetime
 
 class GrafanaBackupManager:
 
-    grafana_config = "grafana_urls.json"
-
     def __init__(self, name, grafana_url, api_key):
         """
         Initialising grafana backup manager
@@ -19,15 +17,17 @@ class GrafanaBackupManager:
         self.s3 = True
         current_date = datetime.now().strftime("%d-%m-%YT%H:%M:%S")
         self.folder_name = current_date+'/'
-        if os.path.exists(GrafanaBackupManager.grafana_config) == True:
-            grafana_config_content = GrafanaBackupManager.get_grafana_content(GrafanaBackupManager.grafana_config)
-            local_backup_content = grafana_config_content['backup'].get('local', dict())
-            self.local = local_backup_content.get('enabled', True) == True
-            if self.local:
-                self.backup_folder = local_backup_content.get('backup_folder', '')+self.name+'/daily/'
-                grafana_sdk.get_logger().info("Local backup is enabled and storing under : {}".format(self.backup_folder))
-                grafana_sdk.get_logger().info("Each Backup folder will have format like this : {}".format(current_date))
-                
+
+        # Get grafana config from environment variables
+        grafana_config_content = GrafanaBackupManager.get_grafana_content()
+        local_backup_content = grafana_config_content['backup'].get('local', dict())
+        self.local = local_backup_content.get('enabled', True) == True
+
+        if self.local:
+            self.backup_folder = local_backup_content.get('backup_folder', '')+'/'+self.name+'/daily/'
+            grafana_sdk.get_logger().info("Local backup is enabled and storing under : {}".format(self.backup_folder))
+            grafana_sdk.get_logger().info("Each Backup folder will have format like this : {}".format(current_date))
+            
 
     def dashboard_backup(self):
         """
@@ -107,14 +107,30 @@ class GrafanaBackupManager:
         return GrafanaBackupManager.get_grafana_content(file_name)
 
     @staticmethod
-    def get_grafana_content(file_name):
+    def get_grafana_content():
+        """
+        Get grafana configuration from env variables
+        """
         try:
-            grafana_url_file = open(file_name)
-            grafana_url_data = json.load(grafana_url_file)
-            grafana_url_file.close()
+            grafana_url_data =  {
+                "grafana_urls":[
+                    {
+                        "name": os.environ['GRAFANA_HOST_NAME'],
+                        "url": os.environ['GRAFANA_URL'],
+                        "api_key": os.environ['GRAFANA_KEY']
+                    }
+                ],
+                "backup":{
+                    "local":{
+                        "backup_folder": os.environ['BACKUP_FOLDER_NAME'],
+                        "enabled": os.getenv('LOCAL_BACKUP','False').lower() in ('true','1','t')
+                    }
+                }
+            }
+            print(grafana_url_data)
             return grafana_url_data
         except Exception as exc:
-            grafana_sdk.get_logger().info("Error reading file {}, error: {}".format(file_name, str(exc)))
+            grafana_sdk.get_logger().info("Error getting grafana-config env variables, error: {}".format(str(exc)))
 
 
 def get_grafana_mapper(grafana_url):
@@ -131,14 +147,15 @@ def get_grafana_mapper(grafana_url):
 
 if __name__=="__main__":
     # Get the url file
-    grafana_url = GrafanaBackupManager.get_grafana_content(GrafanaBackupManager.grafana_config)['grafana_urls']
-    name, url, api_key = get_grafana_mapper(grafana_url[0])
+    grafana_url = GrafanaBackupManager.get_grafana_content()
+    name, url, api_key = get_grafana_mapper(grafana_url['grafana_urls'][0])
     gbm = GrafanaBackupManager(name, url, api_key)
 
-    if input("Enter 'backup' for backup and 'restore' for restore\n") == 'backup':
-        gbm.dashboard_backup()
-    else:
-        gbm.dashboard_restore()
+    #if input("Enter 'backup' for backup and 'restore' for restore\n") == 'backup':
+    #    gbm.dashboard_backup()
+    #else:
+    #    gbm.dashboard_restore()
+    gbm.dashboard_backup()
 
 
         
