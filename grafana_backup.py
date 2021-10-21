@@ -2,15 +2,22 @@ import sys
 import os
 import json
 import grafana_sdk
-import argparse
+import boto3
+from datetime import datetime
 
 class GrafanaBackupManager:
 
     grafana_config = "grafana_urls.json"
 
     def __init__(self, name, grafana_url, api_key):
+        """
+        Initialising grafana backup manager
+        """
         self.name = name
         self.grafana_api = grafana_sdk.GrafanaApi(grafana_url, api_key)
+        self.s3 = True
+        current_date = datetime.now().strftime("%d-%m-%Y")
+        self.folder_name = "self.name/daily/{}/".format(current_date+ "/")
         if os.path.exists(GrafanaBackupManager.grafana_config) == True:
             grafana_config_content = GrafanaBackupManager.get_grafana_content(GrafanaBackupManager.grafana_config)
             local_backup_content = grafana_config_content['backup'].get('local', dict())
@@ -21,6 +28,9 @@ class GrafanaBackupManager:
                 
 
     def dashboard_backup(self, folder_name):
+        """
+        Get all the dashboards in all folder 
+        """
         try:
             dashboards = self.grafana_api.search_db()
             if len(dashboards) == 0:
@@ -64,8 +74,13 @@ class GrafanaBackupManager:
                 folder_id = dashboard_content_json['meta']['folderId']
                 folder_title = dashboard_content_json['meta']['folderTitle']
                 if folder_id !=0:
-                    #need to create a folder using create folder api
-                    pass
+                    folder_response = self.grafana_api.search_folder(folder_id)
+                    if folder_response.status_code != 200:
+                        new_folder_response = self.grafana_api.create_folder(folder_title)
+                        folder_id = new_folder_response['id']
+                    else:
+                        folder_response = folder_response.json()
+                        folder_id = folder_resopnse_['id']
                 del dashboard_content_json['dashboard']['uid']
                 del dashboard_content_json['dashboard']['id']
                 dashboard_content_json['folderId'] = folder_id
@@ -111,8 +126,8 @@ grafana_url = GrafanaBackupManager.get_grafana_content(GrafanaBackupManager.graf
 name, url, api_key = get_grafana_mapper(grafana_url[0])
 gbm = GrafanaBackupManager(name, url, api_key)
 backup_folder = "test-1/"
-#gbm.dashboard_backup(backup_folder)
-gbm.dashboard_restore(backup_folder)
+gbm.dashboard_backup(backup_folder)
+#gbm.dashboard_restore(backup_folder)
 
 
 

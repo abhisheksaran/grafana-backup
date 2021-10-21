@@ -18,6 +18,9 @@ class GrafanaApi:
         return {"Authorization": "Bearer {}".format(self.api_key)}
 
     def search_db(self):
+        """
+        API to get all the grafana-dashboards
+        """
         url = "{}/api/search?type=dash-db".format(self.grafana_url)
         get_logger.info("Request To : URL {}".format(url))
         response = requests.get(url, headers=self.__get_header())
@@ -27,6 +30,9 @@ class GrafanaApi:
 
 
     def dashboard_details(self, dashboard_uid):
+        """
+        API to get the details about particular dashboards given its unique UID
+        """
         url = "{}/api/dashboards/uid/{}".format(self.grafana_url, dashboard_uid)
         get_logger.info("Request To : URL {}".format(url))
         response = requests.get(url, headers = self.__get_header())
@@ -36,6 +42,9 @@ class GrafanaApi:
         return response.json()
 
     def search_folder(self, folder_id):
+        """
+        API to get a particular dashboard-folder given its unique folder_id
+        """
         url = "{}/api/folders/id/{}".format(self.grafana_url, folder_id)
         get_logger().info("Request To : URL {}".format(url))
         response = requests.get(url, header=self.__get_header())
@@ -44,6 +53,9 @@ class GrafanaApi:
         return response.json()
 
     def create_folder(self, folder_title):
+        """
+        API to create a new grafana-dashboard folder of title provided as parameter
+        """
         url = "{}/api/folders".format(self.grafana_url)
         data = { "title": folder_title,}
         get_logger().info("Request To : URL {}".format(url))
@@ -53,6 +65,9 @@ class GrafanaApi:
         return response.json()
 
     def restore(self, json_content):
+        """
+        API to create a new dashbord from the .json file given as parameter
+        """
         headers=self.__get_header()
         headers['Content-Type'] = 'application/json'
         url = "{}/api/dashboards/db/".format(self.grafana_url)
