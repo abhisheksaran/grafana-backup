@@ -104,8 +104,17 @@ class GrafanaBackupManager:
             grafana_sdk.get_logger().info("Error restoring the dashboard, error : {}".format(str(exc)))
     
     def get_backup_meta_content(self, file_name):
-        return GrafanaBackupManager.get_grafana_content(file_name)
-
+        """
+        Return the backup dashboard in dictionary
+        """
+        try:
+            grafana_url_file = open(file_name)
+            grafana_url_data = json.load(grafana_url_file)
+            grafana_url_file.close()
+            return grafana_url_data
+        except Exception as exc:
+            grafana_sdk.get_logger().error("error reading file {} , error {}".format(file_name, str(exc)))
+    
     @staticmethod
     def get_grafana_content():
         """
@@ -154,8 +163,8 @@ if __name__=="__main__":
     #if input("Enter 'backup' for backup and 'restore' for restore\n") == 'backup':
     #    gbm.dashboard_backup()
     #else:
-    #    gbm.dashboard_restore()
-    gbm.dashboard_backup()
+    gbm.dashboard_restore()
+    #gbm.dashboard_backup()
 
 
         
