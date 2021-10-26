@@ -4,6 +4,7 @@ import json
 import grafana_sdk
 import glob
 import argparse
+from argparse import RawTextHelpFormatter
 import pytz 
 #import boto3
 from datetime import datetime
@@ -158,7 +159,14 @@ class GrafanaBackupManager:
             return grafana_url_data
         except Exception as exc:
             grafana_sdk.get_logger().info("Error getting grafana-config env variables, error: {}".format(str(exc)))
-
+    
+    def last_n_backup(self,n):
+        """
+        Return the list of recent n backup
+        """
+        x= sorted(glob.glob(os.path.join(self.parent_backup_folder, '*/')), key=os.path.getmtime)[-n:]
+        x.reverse()
+        return x
 
 def get_grafana_mapper(grafana_url):
     """
@@ -176,22 +184,25 @@ def main():
     """
     Main method to drive the backup and restore. 
     """
-    # Argument parser
-    parser = argparse.ArgumentParser(description='Grafana backup and restoration script.') 
-    group = parser.add_mutually_exclusive_group(required=True)
-
-    group.add_argument('-b','--backup', action='store_true',help="take a backup of all the dashboards")
-    group.add_argument('-r','--restore', type=str, nargs='?', default='',  metavar='BACKUP_DIRECTORY', help="restore all the dashboard from most recent backup, specify a \"backup_directory\" if you want to restore a particular backup. You can find last five backup directories in the backup logs.")
-    
-    args = parser.parse_args()
-    print(args)    
     # Get the env variables
     grafana_url = GrafanaBackupManager.get_grafana_content()
     #grafana_sdk.get_logger().info("The grafana configuration is: {}".format(grafana_url))
     name, url, api_key = get_grafana_mapper(grafana_url['grafana_urls'][0])
     gbm = GrafanaBackupManager(name, url, api_key)
+    show_last_n_backup = int(os.environ['SHOW_LAST_N_BACKUP'])
+    
+    # Argument parser
+    parser = argparse.ArgumentParser(description='Grafana backup and restoration script.', formatter_class=RawTextHelpFormatter) 
+    group = parser.add_mutually_exclusive_group(required=True)
 
-
+    group.add_argument('-b','--backup', action='store_true',help=
+    'take a backup of all the dashboards, \nlast {} backups are as follows: {}'.format(show_last_n_backup ,gbm.last_n_backup(show_last_n_backup))
+    )
+    group.add_argument('-r','--restore', type=str, nargs='?', default='',  metavar='BACKUP_DIRECTORY', help="restore all the dashboard from most recent backup, \nspecify a \"backup_directory\" if you want to restore a particular backup; for eg: \"-r 25-10-2021T15:59:54\", \nset the env variable SHOW_LAST_N_BACKUP to see last n backup in help")
+    
+    args = parser.parse_args()
+    #print(args)    
+    
     if args.backup:
         grafana_sdk.get_logger().info("Recieved input -b for backup ")
         gbm.dashboard_backup()        
