@@ -6,17 +6,19 @@ import glob
 import argparse
 from argparse import RawTextHelpFormatter
 import pytz 
+import shutil
 #import boto3
 from datetime import datetime
 
 class GrafanaBackupManager:
 
-    def __init__(self, name, grafana_url, api_key):
+    def __init__(self, name, grafana_url, api_key, show_backup ):
         """
         Initialising grafana backup manager
         """
         self.name = name
         self.grafana_api = grafana_sdk.GrafanaApi(grafana_url, api_key)
+        self.show_backup = show_backup
         self.s3 = True
 
         # Standardizing time in IST = UTC + 05:30
@@ -28,7 +30,7 @@ class GrafanaBackupManager:
         grafana_config_content = GrafanaBackupManager.get_grafana_content()
         local_backup_content = grafana_config_content['backup'].get('local', dict())
         self.local = local_backup_content.get('enabled', True) == True
-
+        
         if self.local:
             self.parent_backup_folder = local_backup_content.get('backup_folder', '')+'/'+self.name+'/daily/'
             
@@ -56,6 +58,7 @@ class GrafanaBackupManager:
                     # Store the dashboard in the folder_name location
                     folder_name = self.parent_backup_folder+self.folder_name
                     self.__store(folder_name, "{}_{}.json".format(dashboard_title.lower(), dashboard_uri.lower()), dashboard_details_json)
+                    
         except Exception as exc:
             grafana_sdk.get_logger().info("Error taking backup, error : {}".format(str(exc)))
 
@@ -94,7 +97,7 @@ class GrafanaBackupManager:
             if len(backup_file_list) == 0:
                 grafana_sdk.get_logger().info("Couldn't find any files to restore in folder {}".format(self.parent_backup_folder+backup_folder))
             else:
-                grafana_sdk.get_logger().info("Scanned data to create db- {}".format(backup_file_list))
+                grafana_sdk.get_logger().info("Scanned {} dashboard data to create db- {}".format(len(backup_file_list), backup_file_list))
             for backup_file in backup_file_list:
                 dashboard_content_json = self.get_backup_meta_content(backup_folder+backup_file)
                 folder_id = dashboard_content_json['meta']['folderId']
@@ -145,7 +148,8 @@ class GrafanaBackupManager:
                     {
                         "name": os.environ['GRAFANA_HOST_NAME'],
                         "url": os.environ['GRAFANA_URL'],
-                        "api_key": os.environ['GRAFANA_KEY']
+                        "api_key": os.environ['GRAFANA_KEY'],
+                        "show_backup": int(os.environ['SHOW_BACKUP'])
                     }
                 ],
                 "backup":{
@@ -160,7 +164,7 @@ class GrafanaBackupManager:
         except Exception as exc:
             grafana_sdk.get_logger().info("Error getting grafana-config env variables, error: {}".format(str(exc)))
     
-    def last_n_backup(self,n):
+    def get_last_n_backup(self,n):
         """
         Return the list of recent n backup
         """
@@ -176,7 +180,8 @@ def get_grafana_mapper(grafana_url):
         name = grafana_url['name']
         url = grafana_url['url']
         api_key = grafana_url['api_key']
-        return name, url, api_key
+        show_backup = grafana_url['show_backup']
+        return name, url, api_key, show_backup
     except Exception as exc:
         grafana_sdk.get_logger().info("Error mapping grafana host config file, {}".format(str(exc)))
 
@@ -187,18 +192,18 @@ def main():
     # Get the env variables
     grafana_url = GrafanaBackupManager.get_grafana_content()
     #grafana_sdk.get_logger().info("The grafana configuration is: {}".format(grafana_url))
-    name, url, api_key = get_grafana_mapper(grafana_url['grafana_urls'][0])
-    gbm = GrafanaBackupManager(name, url, api_key)
-    show_last_n_backup = int(os.environ['SHOW_LAST_N_BACKUP'])
+    name, url, api_key, show_backup = get_grafana_mapper(grafana_url['grafana_urls'][0])
+    gbm = GrafanaBackupManager(name, url, api_key, show_backup)
+
     
     # Argument parser
     parser = argparse.ArgumentParser(description='Grafana backup and restoration script.', formatter_class=RawTextHelpFormatter) 
     group = parser.add_mutually_exclusive_group(required=True)
 
     group.add_argument('-b','--backup', action='store_true',help=
-    'take a backup of all the dashboards, \nlast {} backups are as follows: {}'.format(show_last_n_backup ,gbm.last_n_backup(show_last_n_backup))
+            'take a backup of all the dashboards, \nlast {} backups are as follows: {}'.format(gbm.show_backup ,gbm.get_last_n_backup(show_backup))
     )
-    group.add_argument('-r','--restore', type=str, nargs='?', default='',  metavar='BACKUP_DIRECTORY', help="restore all the dashboard from most recent backup, \nspecify a \"backup_directory\" if you want to restore a particular backup; for eg: \"-r 25-10-2021T15:59:54\", \nset the env variable SHOW_LAST_N_BACKUP to see last n backup in help")
+    group.add_argument('-r','--restore', type=str, nargs='?', default='',  metavar='BACKUP_DIRECTORY', help="restore all the dashboard from most recent backup, \nspecify a \"backup_directory\" if you want to restore a particular backup; for eg: \"-r 25-10-2021T15:59:54\", \nset the env variable SHOW_BACKUP to see last n backup in help")
     
     args = parser.parse_args()
     #print(args)    
