@@ -1,0 +1,48 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    grafana-backup: "true"
+  name: grafana-backup-minute
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+              grafana-backup: "true"
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+          - name: gdb-volume
+            persistentVolumeClaim:
+              claimName: gdb
+              
+          containers:
+          - name: grafan-backup-minute
+            image: <image-name>
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: PARAMS
+                value: "-b"
+              - name: GRAFANA_HOST_NAME
+                value: "<host_name>"
+              - name: GRAFANA_URL
+                value: "<grafana_url>"
+              - name: GRAFANA_KEY
+                value: "<grafana_api_key>"
+              - name: BACKUP_FOLDER_NAME
+                value: "grafana-backup"
+              - name: LOCAL_BACKUP
+                value: "True"     
+              - name: SHOW_BACKUP
+                value: "5"    
+            volumeMounts:
+            - mountPath: "/src/grafana-backup"
+              name: gdb-volume
+          imagePullSecrets:
+          - name: artifact-secret-prod
