@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: restore-grafanajob
+spec:
+  template:
+    metadata: 
+      name: restore-grafana
+    spec:
+      volumes:
+      - name: gdb-volume
+        persistentVolumeClaim:
+          claimName: gdb
+      containers:
+      - name: restore-grafana
+        image: <image-name>
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: PARAMS
+            value: "-r"   
+          - name: GRAFANA_HOST_NAME
+            value: "<host_name>" 
+          - name: GRAFANA_URL
+            value: "<grafana_url>" 
+          - name: GRAFANA_KEY
+            value: "<grafana_api_key>"
+          - name: BACKUP_FOLDER_NAME
+            value: "grafana-backup"
+          - name: LOCAL_BACKUP
+            value: "True"     
+          - name: SHOW_BACKUP
+            value: "5"  
+        volumeMounts:
+        - mountPath: "/src/grafana-backup"
+          name: gdb-volume    
+      restartPolicy: Never
