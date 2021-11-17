@@ -41,5 +41,6 @@ ENV LOCAL_BACKUP=$LOCAL_BACKUP
 ENV SHOW_BACKUP=$SHOW_BACKUP
 
 # Run the script
+CMD bash s3.sh
 CMD python3 grafana_backup.py ${PARAMS}
 
