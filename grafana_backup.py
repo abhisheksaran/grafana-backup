@@ -128,9 +128,11 @@ class GrafanaBackupManager:
             # If a backup_folder is not specified, restore the most recent backup
             if backup_folder is None:
                 if self.local:
+                    grafana_sdk.get_logger().info("Restoring enabled from local")
                     backup_folder_path = max(glob.glob(os.path.join(self.parent_backup_folder, '*/')), key=os.path.getmtime)
                     backup_file_list = os.listdir(backup_folder_path)
                 if self.s3:
+                    grafana_sdk.get_logger().info("Restoring enabled from S3")
                     backup_folder_path = self.get_recent_backup_folder_s3(self.parent_backup_folder)
                     backup_file_list = self.get_file_list_s3(backup_folder_path)
                 grafana_sdk.get_logger().info("Restoring from recent backup: {}".format(backup_folder_path))
